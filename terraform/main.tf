@@ -23,7 +23,8 @@ variable "bucket_name" {
 variable "sync_directory" {
   type        = string
   description = "directory that will be synced"
-  default     = "bucket"
+  # we go out one directory as our path.module is relative to the terraform directory
+  default     = "../bucket"
 }
 
 # Configure the AWS Provider
