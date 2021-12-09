@@ -14,22 +14,16 @@ variable "aws_region" {
   default     = "us-east-1"
 }
 
-variable "website_domain_main" {
+variable "bucket_name" {
   type        = string
-  description = "The main website domain name that will be receiving the traffic"
-  default     = "bigsby.io"
+  description = "The name of our bucket"
+  default     = "my-bucket"
 }
 
-variable "tags" {
-  description = "Tags added to resources"
-  default     = {}
-  type        = map(string)
-}
-
-variable "site_output_dir" {
+variable "sync_directory" {
   type        = string
-  description = "directory in src that contains the static site generated"
-  default     = "out"
+  description = "directory that will be synced"
+  default     = "bucket"
 }
 
 # Configure the AWS Provider
@@ -38,22 +32,17 @@ provider "aws" {
   profile = "default"
 }
 
-
 # Creates bucket to store the static website
-resource "aws_s3_bucket" "website_root" {
-  bucket = "${var.website_domain_main}-root"
+resource "aws_s3_bucket" "bucket" {
+  bucket = var.bucket_name
   acl    = "private"
-  tags = {
-    Name        = "My bucket"
-    Environment = "Dev"
-  }
 }
 
-# Creates s3 objects sourced from var.site_output_dir that are tracked with an etag for changes.
+# Creates s3 objects sourced from var.sync_directory that are tracked with an etag for changes.
 resource "aws_s3_bucket_object" "object" {
-  for_each = fileset("${path.module}/../${var.site_output_dir}", "**")
-  bucket  = aws_s3_bucket.website_root.id
+  for_each = fileset("${path.module}/${var.sync_directory}", "**")
+  bucket  = aws_s3_bucket.bucket.id
   key     = each.value
-  source  = "${path.module}/../${var.site_output_dir}/${each.value}"
-  etag    = filemd5("${path.module}/../${var.site_output_dir}/${each.value}")
+  source  = "${path.module}/${var.sync_directory}/${each.value}"
+  etag    = filemd5("${path.module}/${var.sync_directory}/${each.value}")
 }
